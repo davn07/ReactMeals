@@ -1,12 +1,17 @@
-import React, {useContext} from 'react';
+import React, {useContext, useState} from 'react';
 
 import Modal from '../UI/Modal';
 import CartItem from './CartItem';
+
+import CheckOut from './CheckOut';
+
 import CartContext from '../../store/cart-context';
 
 import classes from './Cart.module.css';
 
 const Cart = props => {
+
+    const [isCheckOut, setIsCheckOut] = useState(false);
 
     const cartCtx = useContext(CartContext);
 
@@ -20,6 +25,21 @@ const Cart = props => {
     const cartItemAddHandler = item => {
         cartCtx.addItem({...item, amount: 1})
     };
+
+    const orderHandler = () => {
+        setIsCheckOut(true);
+    };
+
+    const submitOrderHandler = ( userData) =>  {
+        fetch('https://react-customhooks-b7061-default-rtdb.firebaseio.com/orders.json',{
+            method: 'POST',
+            body: JSON.stringify({
+                user: userData,
+                ordereditems: cartCtx.items 
+            })
+        });
+    };
+
 
     const cartItems = (
         <ul className={classes['cart-items']}>
@@ -36,19 +56,28 @@ const Cart = props => {
         </ul> 
     );
 
+    const modalActions = (
+        <div className={classes.actions}>
+            <button className={classes['button--alt']} onClick={props.onClose}> Close</button>
+            {hasItems && (
+                <button className={classes.button} onClick={orderHandler}>
+                    Order
+                </button>
+            )}
+        </div>
+    );
+
     return (
-        <Modal onClose={props.onClose}>
+      <Modal onClose={props.onClose}>
             {cartItems}
             <div className={classes.total}>
                 <span>Total Amount</span>
                 <span>{totalAmount}</span>
             </div>
-            <div className={classes.actions}>
-                <button className={classes['button--alt']} onClick={props.onClose}> Close</button>
-                {hasItems && <button className={classes.button}>Order</button>}
-            </div>
-        </Modal>
+            {isCheckOut && <CheckOut onConfirm={submitOrderHandler} onCancel={props.onClose} />}
+            {!isCheckOut && modalActions}
+      </Modal>
     );
-}
+};
 
 export default Cart;
